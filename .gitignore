@@ -1,5 +1,8 @@
 .DS_Store
 **/.infragenie
 *.tfstate
+*.tfstate.lock.info
 *.egg-info/
 **/__pycache__
+build/
+dist/

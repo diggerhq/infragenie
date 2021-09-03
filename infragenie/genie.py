@@ -1,4 +1,4 @@
-import os
+import os, sys
 import json
 import glob
 import shutil
@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 from rich import print
 import hcl2
-
+import click
 
 def construct_dag():
     pass
@@ -92,10 +92,30 @@ def applyAndResolveOutputs(path, outputs, pipelineName):
     os.chdir(cdir)
     return resolved
 
+def destroyInfra(path, pipelineName):
+    cdir = os.getcwd()
+    os.chdir(path)
+    subprocess.run(["terraform", "init"], check=True)
+    subprocess.run(["terraform", "destroy", "-state", f"../../{pipelineName}.terraform.tfstate"], check=True)
+
+GENIESPLASH = """
+🧞 InfraGenie 😄
+
+"""
+
+@click.group(epilog=GENIESPLASH)
 def cli():
     print(":vampire: welcome to [bold magenta]InfraGenie[/bold magenta] CLI! :smile:")
 
+
+@cli.command()
+def apply():
+
     print("parsing genie.hcl file ...")
+
+    if not os.path.exists("genie.hcl"):
+        print("[bold red]Error! genie.hcl file not found[/bold red]")
+        sys.exit(1)
 
     with open("genie.hcl") as f:
         d = hcl2.load(f)
@@ -137,8 +157,23 @@ def cli():
             genVars(modulePath, globalVars)
             genInputs(modulePath, tformRequires, injects, resolved_outputs)
             outputs = genoutputs(modulePath, terraformResources, injects)
-
-            
             tmpOutputs = applyAndResolveOutputs(modulePath, outputs, pipelinename)
             resolved_outputs.extend(tmpOutputs)
+
+
+@cli.command()
+def destroy():
+
+    if not os.path.exists("genie.hcl"):
+        print("[bold red]Error! genie.hcl file not found[/bold red]")
+        sys.exit(1)
+
+    with open("genie.hcl") as f:
+        d = hcl2.load(f)
+
+    for pipeline in d["pipeline"][0]["steps"]:
+        pipelineName, pipelinesource = pipeline["name"], pipeline.get("source")
+        modulePath = f".infragenie/{pipeline['name']}"
+
+        destroyInfra(modulePath, pipelineName)
 

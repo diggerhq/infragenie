@@ -1,5 +1,5 @@
 
-# InfraGenie
+# :genie: InfraGenie
 
 InfraGenie is allows you to split out your infrastructure project into separate independent pieces, each with its own terraform state. This is done using a pattern similar to dependency injection in  programming languages, but under the hood it uses [terraform data blocks](https://www.terraform.io/docs/language/data-sources/index.html).
 

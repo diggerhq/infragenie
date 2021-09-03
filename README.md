@@ -1,6 +1,10 @@
+
 # InfraGenie
 
 InfraGenie is allows you to split out your infrastructure project into separate independent pieces, each with its own terraform state. This is done using a pattern similar to dependency injection in  programming languages, but under the hood it uses [terraform data blocks](https://www.terraform.io/docs/language/data-sources/index.html).
+
+![infragenie drawio (1)](https://user-images.githubusercontent.com/1627972/132008493-1e203d20-dd6f-449b-8884-23333af9c1fb.png)
+
 
 ## Why this pattern?
 
@@ -17,7 +21,7 @@ Terraform modules can allow you to acheive some flexibiliy buy you still share s
 
 To use infragenie you simply create a file called `genie.hcl` in the root of your project and use it to define your pipeline.
 
-```python
+```hcl
 # genie.hcl
 
 
@@ -53,7 +57,7 @@ pipeline {
 ```
 Now with this genie file you can use the vpc in any of your modules as a data definition:
 
-```python
+```hcl
 # ecs/main.tf
 
 resource "aws_security_group" "ecs_service_sg" {

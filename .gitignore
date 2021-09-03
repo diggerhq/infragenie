@@ -1,0 +1,5 @@
+.DS_Store
+**/.infragenie
+*.tfstate
+*.egg-info/
+**/__pycache__

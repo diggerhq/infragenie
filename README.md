@@ -3,7 +3,7 @@
 
 InfraGenie is allows you to split out your infrastructure project into separate independent pieces, each with its own terraform state. This is done using a pattern similar to dependency injection in  programming languages, but under the hood it uses [terraform data blocks](https://www.terraform.io/docs/language/data-sources/index.html).
 
-![infragenie drawio (1)](https://user-images.githubusercontent.com/1627972/132094453-2831f1bd-52f1-4e4b-b829-8573a906580d.png)
+![infragenie drawio (3)](https://user-images.githubusercontent.com/1627972/132094461-6d07d7ab-0ea9-4da5-a0ff-1f1d3ae6637f.png)
 
 
 ## Why this pattern?

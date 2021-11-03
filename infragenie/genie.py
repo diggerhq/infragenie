@@ -37,9 +37,14 @@ def genInputs(path, data, injects, resolved_outputs):
             n = output["name"]
             rn = output["resource_name"]
             output_id = output["id"]
+            # ec2 instances have different 'id' keys
+            if t == "aws_instance":
+                id_type = "instance_id"
+            else:
+                id_type = "id"
             f.write(f"""
 data "{t}" "{n}" {{
-    id = "{output_id}"
+    {id_type} = "{output_id}"
 }}
 
     """)
@@ -50,12 +55,13 @@ def genoutputs(path, resources, injects):
         resource_names = list(map(lambda x: x["resource_name"], injects))
         names = list(map(lambda x: x["name"], injects))
         types = list(map(lambda x: x["type"], injects))
-
         for i in range(len(injects)):
             t = types[i]
             rn = resource_names[i]
             n = names[i]
-            if rn in resources.get(t, []):
+            # we need to look for [ { type: { resource_name: {} } } ]
+            # to find things like aws_instance.this
+            if list(filter(lambda q: q.get(t, {}).get(rn), resources)):
                 outputs.append({
                     "resource_name": rn,
                     "name": n,
@@ -73,7 +79,7 @@ def applyAndResolveOutputs(path, outputs, pipelineName):
     cdir = os.getcwd()
     os.chdir(path)
     subprocess.run(["terraform", "init"], check=True)
-    subprocess.run(["terraform", "apply", "-state", f"../../{pipelineName}.terraform.tfstate"], check=True)
+    subprocess.run(["terraform", "apply", "-auto-approve", "-state", f"../../{pipelineName}.terraform.tfstate"], check=True)
     proc = subprocess.run(["terraform", "output", "-json", "-state", f"../../{pipelineName}.terraform.tfstate"], capture_output=True)
     terraform_outputs = proc.stdout.decode("utf-8").strip()
     terraform_outputs = json.loads(terraform_outputs)
@@ -96,7 +102,9 @@ def destroyInfra(path, pipelineName):
     cdir = os.getcwd()
     os.chdir(path)
     subprocess.run(["terraform", "init"], check=True)
-    subprocess.run(["terraform", "destroy", "-state", f"../../{pipelineName}.terraform.tfstate"], check=True)
+    subprocess.run(["terraform", "destroy", "-auto-approve", "-state", f"../../{pipelineName}.terraform.tfstate"], check=True)
+    os.chdir(cdir)
+    shutil.rmtree(path)
 
 GENIESPLASH = """
 🧞 InfraGenie 😄
@@ -119,8 +127,7 @@ def apply():
 
     with open("genie.hcl") as f:
         d = hcl2.load(f)
-        print("found the following settings:")
-        print(d)
+        print("found the following settings:",d)
         globalVars = d.get("variables", [{}])[0]
 
     print("Rendering data outputs")
@@ -138,21 +145,20 @@ def apply():
 
     print("rendering terraform outputs")
 
-    shutil.rmtree(".infragenie")
+    shutil.rmtree(".infragenie",ignore_errors=True)
     Path(".infragenie").mkdir(parents=True, exist_ok=True)
     resolved_outputs = []
     for pipeline in d["pipeline"][0]["steps"]:
         if "source" in pipeline:
+            print("Creating pipeline step",pipeline["name"])
             pipelinename, pipelinesource = pipeline["name"], pipeline.get("source")
 
             modulePath = os.path.join(f".infragenie/{pipeline['name']}")
             shutil.copytree(pipeline["source"], modulePath)
 
             tformdata = parsetform(modulePath)
-            print(tformdata)
-            tformRequires = tformdata.get("data", [{}])[0]
-            terraformResources = tformdata.get("resource", [{}])[0]
-            terraformResources.keys()
+            tformRequires = tformdata.get("data", [{}])
+            terraformResources = tformdata.get("resource", [{}])
 
             genVars(modulePath, globalVars)
             genInputs(modulePath, tformRequires, injects, resolved_outputs)
@@ -161,9 +167,9 @@ def apply():
             resolved_outputs.extend(tmpOutputs)
 
 
-@cli.command()
-def destroy():
-
+@click.command()
+@click.argument('steplist', nargs=-1)
+def destroy(steplist):
     if not os.path.exists("genie.hcl"):
         print("[bold red]Error! genie.hcl file not found[/bold red]")
         sys.exit(1)
@@ -171,9 +177,18 @@ def destroy():
     with open("genie.hcl") as f:
         d = hcl2.load(f)
 
-    for pipeline in d["pipeline"][0]["steps"]:
-        pipelineName, pipelinesource = pipeline["name"], pipeline.get("source")
-        modulePath = f".infragenie/{pipeline['name']}"
+    if not steplist: # this allows us to assume "destroy all" if 'steplist' unspecified
+        steplist = []
+        p_steplist = d["pipeline"][0]["steps"]
+        p_steplist.reverse() # destroy all in reverse order to avoid dependency conflicts
+        for pipeline in steplist:
+            steplist.append(pipeline["name"])
 
-        destroyInfra(modulePath, pipelineName)
+    for name in steplist: # this does no dependency checks
+        modulePath = f".infragenie/{name}"
+        if not os.path.exists(modulePath):
+            print("[bold red]'"+name+"' already gone![/bold red]")
+            break
+        destroyInfra(modulePath, name)
 
+cli.add_command(destroy)

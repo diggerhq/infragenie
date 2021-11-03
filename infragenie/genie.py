@@ -181,14 +181,14 @@ def destroy(steplist):
         steplist = []
         p_steplist = d["pipeline"][0]["steps"]
         p_steplist.reverse() # destroy all in reverse order to avoid dependency conflicts
-        for pipeline in steplist:
+        for pipeline in p_steplist:
             steplist.append(pipeline["name"])
 
     for name in steplist: # this does no dependency checks
         modulePath = f".infragenie/{name}"
         if not os.path.exists(modulePath):
             print("[bold red]'"+name+"' already gone![/bold red]")
-            break
+            continue
         destroyInfra(modulePath, name)
 
 cli.add_command(destroy)

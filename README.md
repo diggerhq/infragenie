@@ -1,10 +1,9 @@
 
 # :genie: InfraGenie
 
-InfraGenie is allows you to split out your infrastructure project into separate independent pieces, each with its own terraform state. This is done using a pattern similar to dependency injection in  programming languages, but under the hood it uses [terraform data blocks](https://www.terraform.io/docs/language/data-sources/index.html).
+InfraGenie is a tool that allows you to split your infrastructure project into separate independent pieces, each with their own terraform state. This is done by using [terraform data blocks](https://www.terraform.io/docs/language/data-sources/index.html) behind the scenes to simulate a pattern similar to dependency injection in programming languages.
 
 ![infragenie drawio (3)](https://user-images.githubusercontent.com/1627972/132094461-6d07d7ab-0ea9-4da5-a0ff-1f1d3ae6637f.png)
-
 
 ## Why this pattern?
 
@@ -51,10 +50,10 @@ pipeline {
       description = "creates an ecs cluster and SG"
       source = "./ecs"
     },
-
   ]
 }
 ```
+
 Now with this genie file you can use the vpc in any of your modules as a data definition:
 
 ```hcl
@@ -72,7 +71,7 @@ resource "aws_security_group" "ecs_service_sg" {
 
 You can install InfraGenie CLI via pip
 
-```bash
+```shell
 pip install infragenie
 ```
 
@@ -82,34 +81,36 @@ You can use the examples to try out infragenie:
 
 Clone the repository:
 
-```
+```shell
 git clone https://github.com/diggerhq/infragenie
 cd infragenie/examples/ecs_fargate
 ```
 
 export your AWS keys:
 
-```
+```shell
 export AWS_ACCESS_KEY_ID=<Access Key>
 export AWS_SECRET_ACCESS_KEY=<Secret>
 ```
 
 Use igm to apply the example:
 
-```
+```shell
 igm apply
 ```
 
 take note of the generated `.infragenie` directory along with all the generated data. After exploration you can destroy the resources with:
 
-```
+```shell
 igm destroy
 ```
 
 ## Contributing
+
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 Please start the project if you think other people will also find it useful.
 
 ## License
+
 [MIT](https://choosealicense.com/licenses/mit/)
